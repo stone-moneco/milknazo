@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>もねこのWEBなぞ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            background: linear-gradient(240deg, #10072b 5%, #18225c 40%, #253fc1 80%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .btn-bounce {
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .btn-bounce:active {
+            transform: scale(0.95) translateY(2px);
+        }
+
+        @keyframes message-pop {
+            0% { transform: scale(0.94); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: message-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .lock-overlay {
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                        visibility 0.35s;
+        }
+        .lock-overlay.unlocked {
+            opacity: 0;
+            transform: scale(0.96);
+            pointer-events: none;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body class="text-slate-100 flex flex-col items-center justify-between p-2 sm:p-4 md:p-6 overflow-x-hidden select-none relative min-h-screen">
+
+    <!-- 左上固定 GAMEステータス表示 -->
+    <div class="fixed top-3 left-3 sm:top-4 sm:left-4 z-40">
+        <div id="game-status" class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-slate-900/90 border-2 border-slate-700/80 text-slate-300 font-black text-xs sm:text-sm shadow-xl backdrop-blur-md transition-all duration-500 flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400 animate-pulse" id="status-dot"></span>
+            <span id="status-text">GAME：未クリア</span>
+        </div>
+    </div>
+
+    <!-- スタート画面 -->
+    <div id="start-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#090518]/70 backdrop-blur-md p-3 sm:p-6 text-center">
+        <div class="bg-slate-900/90 border-2 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)] rounded-3xl p-5 sm:p-8 max-w-lg w-full flex flex-col items-center gap-4 sm:gap-5 animate-pop max-h-[92vh] overflow-y-auto">
+            
+            <!-- ① タイトル -->
+            <h1 class="text-3xl sm:text-4xl font-black text-amber-100 tracking-wide border-b-2 border-amber-200/20 pb-2 sm:pb-3 w-full">
+                もねこのWEB謎🥛
+            </h1>
+
+            <!-- ② クリア条件 -->
+            <div class="space-y-1 bg-slate-950/80 p-3 sm:p-4 rounded-2xl border border-slate-800 w-full">
+                <div class="text-[#F39800] font-extrabold text-xs tracking-widest uppercase">クリア条件</div>
+                <div class="text-lg sm:text-2xl font-black text-slate-100">
+                    ゲームをクリアにする
+                </div>
+            </div>
+
+            <!-- ③ 注意事項セクション（4行） -->
+            <div class="space-y-1.5 bg-slate-950/50 p-3.5 sm:p-4 rounded-2xl border border-slate-800/80 w-full text-left">
+                <ul class="text-slate-300 text-xs sm:text-sm space-y-1 font-bold list-disc list-inside">
+                    <li>サクッと終わります</li>
+                    <li>SNSなど未プレイの方が不意に見てしまう<br>   場所にヒントや答えを書くネタバレ行為は禁止です</li>
+                    <li>ソースコードは見なくて大丈夫です</li>
+                    <li>実況・配信等は可能です</li>
+                </ul>
+            </div>
+
+            <!-- ④ スタートボタン -->
+            <button id="start-btn" class="btn-bounce bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg sm:text-2xl px-8 sm:px-10 py-3 rounded-2xl shadow-xl border-b-4 border-amber-700 flex items-center gap-3 cursor-pointer mt-1 w-full sm:w-auto justify-center">
+                <i class="fa-solid fa-play text-lg sm:text-xl"></i>
+                <span>スタート</span>
+            </button>
+
+            <!-- ⑤ 作者情報（枠線なしアイコン＆@stone_monecoホバー強調） -->
+            <a href="https://x.com/stone_moneco" target="_blank" rel="noopener noreferrer" 
+               class="btn-bounce bg-slate-950/80 p-3 rounded-2xl w-full flex items-center justify-between transition-all group shadow-md border border-slate-800/80 mt-1">
+                <div class="flex items-center gap-3">
+                    <div class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden shrink-0 shadow">
+                        <img src="./image/icon.png" alt="石神もねこ" 
+                             onerror="this.onerror=null; this.src='https://placehold.co/100x100/F39800/ffffff?text=M';" 
+                             class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-left">
+                        <div class="text-[10px] text-[#F39800] font-extrabold uppercase tracking-wider">作者</div>
+                        <div class="text-sm sm:text-base font-black text-slate-100">石神もねこ</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-xs sm:text-sm font-extrabold shadow-inner">
+                    <i class="fa-brands fa-x-twitter text-sm text-slate-300"></i>
+                    <span class="hidden sm:inline text-slate-400 group-hover:text-slate-100 transition-colors">@stone_moneco</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-500"></i>
+                </div>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- クリア画面 -->
+    <div id="clear-screen" class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center bg-[#090518]/70 backdrop-blur-md p-4 sm:p-6 text-center">
+        <div class="bg-slate-900/90 border-2 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)] rounded-3xl p-5 sm:p-8 max-w-md w-full flex flex-col items-center gap-3 animate-pop relative overflow-hidden">
+            <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="space-y-1 z-10">
+                <h2 class="text-3xl sm:text-4xl font-black text-amber-300 tracking-wider">
+                    ゲームクリア
+                </h2>
+            </div>
+
+            <!-- クリア画面用キャンバス -->
+            <div class="relative w-36 h-[180px] sm:w-44 sm:h-[220px] drop-shadow-2xl z-10 my-0">
+                <canvas id="canvas-clear" width="320" height="420" class="w-full h-full object-contain"></canvas>
+            </div>
+
+            <p class="text-base sm:text-xl font-black text-slate-100 leading-snug z-10 bg-slate-950/80 px-4 py-2.5 rounded-2xl border border-slate-800 w-full">
+                あなたは<br>ミルクをバターにして<br>ゲームをクリアした！
+            </p>
+
+            <!-- アクションボタン群 -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-2.5 w-full z-10 mt-1">
+
+
+                <!-- クリアポストボタン -->
+                <a id="clear-post-btn" href="https://twitter.com/intent/tweet?text=https%3A%2F%2Fnazo.link%2Fapv8wxiz%0A%E2%96%A0%E2%96%A0%E2%96%A0%E3%82%92%E2%96%A0%E2%96%A0%E2%96%A0%E3%81%AB%E3%81%97%E3%81%A6%E3%82%B2%E3%83%BC%E3%83%A0%E3%82%92%E3%82%AF%E3%83%AA%E3%82%A2%E3%81%97%E3%81%9F%EF%BC%81%0A%23%E3%82%82%E3%81%AD%E3%81%93%E8%AC%8E%E3%83%9F%E3%83%AB%E3%82%AF" 
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn-bounce w-full sm:w-1/2 bg-black hover:bg-slate-900 text-white font-black text-sm sm:text-base py-3 px-3 rounded-2xl shadow-xl border-b-4 border-slate-950 border-t border-slate-700 flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-brands fa-x-twitter text-base"></i>
+                    <span>クリアポスト</span>
+                </a>
+
+                <!-- タイトルに戻るボタン -->
+                <button id="clear-restart-btn" class="btn-bounce w-full sm:w-1/2 bg-slate-800 hover:bg-slate-700 text-white font-black text-sm sm:text-base py-3 px-3 rounded-2xl shadow-xl border-b-4 border-slate-950 border-t border-slate-600 flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-house text-sm"></i>
+                    <span>タイトルに戻る</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- メインコンテンツ（画面内にジャストフィット） -->
+    <main class="flex flex-col items-center justify-center gap-3 sm:gap-4 w-full max-w-3xl my-auto pt-10 sm:pt-6">
+        
+        <!-- 2つの正方形画像エリア（スマホでは縦並び1列、PCでは横並び2列） -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl mx-auto px-2 sm:px-0">
+            
+            <!-- カードA: 画像A -->
+            <div class="flex flex-col items-center w-full">
+                <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border-2 border-[#F39800] shadow-xl">
+                    <img src="./image/a.jpg" 
+                         alt="画像A" 
+                         onerror="this.onerror=null; this.src='https://placehold.co/800x800/FFFFFF/F39800?text=Image+A';"
+                         class="w-full h-full object-cover">
+
+                    <!-- 牛乳瓶 A -->
+                    <div class="absolute left-1/2 top-[17%] -translate-x-1/2 h-[20%] aspect-[320/420] pointer-events-none drop-shadow-md">
+                        <canvas id="canvas-a" width="320" height="420" class="w-full h-full object-contain"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- カードB: 画像B -->
+            <div class="flex flex-col items-center w-full">
+                <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-white border-2 border-[#F39800] shadow-xl">
+                    <img src="./image/b.jpg" 
+                         alt="画像B" 
+                         onerror="this.onerror=null; this.src='https://placehold.co/800x800/FFFFFF/F39800?text=Image+B';"
+                         class="w-full h-full object-cover">
+
+                    <!-- 牛乳瓶 B -->
+                    <div class="absolute left-1/2 top-[62%] -translate-x-1/2 h-[20%] aspect-[320/420] pointer-events-none drop-shadow-md">
+                        <canvas id="canvas-b" width="320" height="420" class="w-full h-full object-contain"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- コマンドパネル＆統合型ロック画面コンテナ -->
+        <div class="w-full max-w-xl flex flex-col items-center gap-2">
+            
+            <!-- メインパネル枠 -->
+            <div class="relative w-full bg-slate-900/90 border-2 border-slate-700/80 p-3.5 sm:p-6 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 overflow-hidden backdrop-blur-md">
+                
+                <!-- 【ロック画面（オーバーレイ）】 -->
+                <div id="panel-lock-overlay" class="lock-overlay absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md rounded-3xl border-2 border-slate-700 p-3 sm:p-5 shadow-2xl gap-3">
+                    
+                    <div class="flex items-center justify-center gap-2 text-center px-1">
+                        <i class="fa-solid fa-lock text-[#F39800] text-lg sm:text-2xl shrink-0"></i>
+                        <span class="text-slate-100 font-black text-xs sm:text-base">答えを入力して判定を押してください</span>
+                    </div>
+
+                    <!-- 回答入力＆判定ボタンフォーム -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 bg-slate-900/90 border border-slate-700/90 rounded-2xl p-2.5 sm:p-3 shadow-inner w-full max-w-sm sm:max-w-none">
+                        <!-- Aの答え -->
+                        <div class="flex items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto">
+                            <label for="input-a" class="text-xs sm:text-sm font-black text-slate-200 shrink-0">Aの答え：</label>
+                            <input type="text" id="input-a" maxlength="6" placeholder="回答" autocomplete="off"
+                                   class="w-24 sm:w-28 px-2 py-1 rounded-xl border-2 font-black text-center text-sm sm:text-base outline-none transition-all duration-300 shadow-sm bg-slate-950 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-[#F39800]">
+                        </div>
+
+                        <!-- Bの答え -->
+                        <div class="flex items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto">
+                            <label for="input-b" class="text-xs sm:text-sm font-black text-slate-200 shrink-0">Bの答え：</label>
+                            <input type="text" id="input-b" maxlength="6" placeholder="回答" autocomplete="off"
+                                   class="w-24 sm:w-28 px-2 py-1 rounded-xl border-2 font-black text-center text-sm sm:text-base outline-none transition-all duration-300 shadow-sm bg-slate-950 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-[#F39800]">
+                        </div>
+
+                        <!-- 判定ボタン -->
+                        <button id="check-btn" class="btn-bounce bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm px-5 py-1.5 rounded-xl shadow-md border-b-4 border-emerald-700 flex items-center justify-center gap-1 cursor-pointer w-full sm:w-auto mt-0.5 sm:mt-0">
+                            <i class="fa-solid fa-check text-xs"></i>
+                            <span>判定</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- コマンド入力表示欄 -->
+                <div class="w-full flex flex-col items-center justify-center gap-1 text-center">
+                    <div class="text-[#F39800] font-extrabold text-xs sm:text-sm tracking-widest uppercase">コマンド</div>
+                    <div class="flex flex-wrap items-center justify-center gap-1.5 text-sm sm:text-lg font-black text-slate-100 py-0.5">
+                        <select id="select-1" class="bg-slate-950 border-2 border-[#F39800]/70 focus:border-[#F39800] text-amber-200 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl outline-none cursor-pointer text-xs sm:text-base font-bold shadow-sm shrink-0">
+                            <option value="" disabled selected>選択肢</option>
+                            <option value="A">Aの答え</option>
+                            <option value="B">Bの答え</option>
+                        </select>
+                        <span class="shrink-0">を</span>
+                        
+                        <select id="select-2" class="bg-slate-950 border-2 border-[#F39800]/70 focus:border-[#F39800] text-amber-200 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl outline-none cursor-pointer text-xs sm:text-base font-bold shadow-sm shrink-0">
+                            <option value="" disabled selected>選択肢</option>
+                            <option value="A">Aの答え</option>
+                            <option value="B">Bの答え</option>
+                        </select>
+                        <span class="shrink-0">にする。</span>
+                    </div>
+                </div>
+
+                <!-- メッセージ表示欄 -->
+                <div id="message-box" class="w-full flex items-center justify-center px-3 py-1.5 sm:py-2 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-center font-black text-xs sm:text-base transition-all duration-300">
+                    <span id="message-text" class="text-slate-300">実行を押すとコマンドの内容が実行されます</span>
+                </div>
+
+                <!-- 実行ボタン -->
+                <button id="exec-btn" class="btn-bounce bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base sm:text-lg px-8 py-2 rounded-2xl shadow-lg border-b-4 border-amber-700 flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-play text-sm"></i>
+                    <span>実行</span>
+                </button>
+
+            </div>
+
+            <!-- リセットボタン（ロック画面の外側にあり常時押下可能） -->
+            <button id="reset-btn" title="最初からやり直す" class="btn-bounce bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-bold text-xs sm:text-sm px-5 py-2 rounded-2xl shadow border-2 border-slate-700/80 flex items-center gap-2 cursor-pointer backdrop-blur-sm">
+                <i class="fa-solid fa-arrow-rotate-left"></i>
+                <span>ゲームをリセットする</span>
+            </button>
+
+        </div>
+
+    </main>
+
+    <script>
+        const DEFAULT_MESSAGE = "実行を押すとコマンドの内容が実行されます";
+
+        // 入力ボックスのスタイル定数
+        const NEUTRAL_INPUT_CLASS = "w-24 sm:w-28 px-2 py-1 rounded-xl border-2 font-black text-center text-sm sm:text-base outline-none transition-all duration-300 shadow-sm bg-slate-950 border-slate-600 text-slate-100 placeholder-slate-500 focus:border-[#F39800]";
+        const GREEN_INPUT_CLASS = "w-24 sm:w-28 px-2 py-1 rounded-xl border-2 font-black text-center text-sm sm:text-base outline-none transition-all duration-300 shadow-sm bg-emerald-500/20 border-emerald-400 text-emerald-200 placeholder-emerald-400/50 ring-2 ring-emerald-400/40";
+        const RED_INPUT_CLASS = "w-24 sm:w-28 px-2 py-1 rounded-xl border-2 font-black text-center text-sm sm:text-base outline-none transition-all duration-300 shadow-sm bg-rose-500/20 border-rose-500/80 text-rose-200 placeholder-rose-400/50";
+
+        // 状態変数
+        let count = 0;              // シェイク（逆さ）回数
+        let wrongBtoACount = 0;     // 「BをAにする」勘違い実行回数
+        let currentAngle = 0;       // 瓶の現在の描画角度
+        let targetAngle = 0;        // 瓶の目標角度
+        let angleVelocity = 0;      // 角速度
+        let liquidTilt = 0;         // 流体傾き
+        let waveAmp = 0;            // 液面揺れ振幅
+        let wavePhase = 0;          // 液面位相
+        let messageTimer = null;    // メッセージ自動消去タイマー
+
+        // DOM要素の参照取得
+        const canvasA = document.getElementById('canvas-a');
+        const ctxA = canvasA.getContext('2d');
+        const canvasB = document.getElementById('canvas-b');
+        const ctxB = canvasB.getContext('2d');
+        const canvasClear = document.getElementById('canvas-clear');
+        const ctxClear = canvasClear.getContext('2d');
+
+        const cx = 320 / 2;
+        const cy = 420 / 2;
+
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const clearScreen = document.getElementById('clear-screen');
+        const clearRestartBtn = document.getElementById('clear-restart-btn');
+
+        const inputA = document.getElementById('input-a');
+        const inputB = document.getElementById('input-b');
+        const checkBtn = document.getElementById('check-btn');
+        const panelLockOverlay = document.getElementById('panel-lock-overlay');
+
+        const select1 = document.getElementById('select-1');
+        const select2 = document.getElementById('select-2');
+        const execBtn = document.getElementById('exec-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+
+        const gameStatus = document.getElementById('game-status');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+
+        startBtn.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+        });
+
+        clearRestartBtn.addEventListener('click', () => {
+            clearScreen.classList.add('hidden');
+            resetAllGame();
+            startScreen.classList.remove('hidden');
+        });
+
+        inputA.addEventListener('input', () => {
+            inputA.className = NEUTRAL_INPUT_CLASS;
+        });
+        inputB.addEventListener('input', () => {
+            inputB.className = NEUTRAL_INPUT_CLASS;
+        });
+
+        checkBtn.addEventListener('click', checkAnswers);
+
+        function checkAnswers() {
+            const valA = inputA.value.trim();
+            const valB = inputB.value.trim();
+
+            const isButter = (count >= 40);
+
+            // 表記ゆれの許容
+            const validA = isButter ? ["げーむ", "ゲーム"] : ["みるく", "ミルク"];
+            const validB = isButter ? ["くりあ", "クリア"] : ["さかさ", "逆さ", "サカサ"];
+
+            const isCorrectA = validA.includes(valA);
+            const isCorrectB = validB.includes(valB);
+
+            inputA.className = isCorrectA ? GREEN_INPUT_CLASS : RED_INPUT_CLASS;
+            inputB.className = isCorrectB ? GREEN_INPUT_CLASS : RED_INPUT_CLASS;
+
+            if (isCorrectA && isCorrectB) {
+                panelLockOverlay.classList.add('unlocked');
+            } else {
+                panelLockOverlay.classList.remove('unlocked');
+            }
+        }
+
+        function createOuterBottlePath() {
+            const path = new Path2D();
+            path.moveTo(-44, -125);
+            path.quadraticCurveTo(-50, -118, -44, -110);
+            path.lineTo(-40, -104);                      
+            path.bezierCurveTo(-40, -70, -60, -50, -60, -20);
+            path.lineTo(-60, 112);                       
+            path.quadraticCurveTo(-60, 134, -38, 134);   
+            path.lineTo(38, 134);                        
+            path.quadraticCurveTo(60, 134, 60, 112);     
+            path.lineTo(60, -20);                        
+            path.bezierCurveTo(60, -50, 40, -70, 40, -104);  
+            path.lineTo(44, -110);                       
+            path.quadraticCurveTo(50, -118, 44, -125);   
+            path.closePath();
+            return path;
+        }
+
+        function createInnerBottlePath() {
+            const path = new Path2D();
+            path.moveTo(-36, -115);                     
+            path.bezierCurveTo(-36, -70, -52, -50, -52, -20); 
+            path.lineTo(-52, 110);                       
+            path.quadraticCurveTo(-52, 122, -32, 122);   
+            path.lineTo(32, 122);
+            path.quadraticCurveTo(52, 122, 52, 110);
+            path.lineTo(52, -20);
+            path.bezierCurveTo(52, -50, 36, -70, 36, -115);
+            path.closePath();
+            return path;
+        }
+
+        const outerBottlePath = createOuterBottlePath();
+        const innerBottlePath = createInnerBottlePath();
+
+        function drawPlainCap(ctx) {
+            ctx.save();
+            ctx.translate(0, -120);
+
+            ctx.fillStyle = '#FCF8ED';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 38, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#D0C09E';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.strokeStyle = '#E2D3B1';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 32, 8, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawButter(ctx, yPos, sizeRatio, currentWaveAmp, currentWavePhase) {
+            if (sizeRatio <= 0) return;
+
+            ctx.save();
+            ctx.translate(0, yPos);
+            
+            const wobble = currentWaveAmp > 0.1 ? Math.sin(currentWavePhase * 2) * currentWaveAmp * 0.1 : 0;
+            ctx.rotate(wobble); 
+            
+            const butterScale = sizeRatio * 1.6;
+            ctx.scale(butterScale, butterScale);
+
+            const lumps = [
+                { x: -11, y: -4, r: 21 },
+                { x: 9,   y: -5, r: 19 },
+                { x: -4,  y: 7,  r: 18 },
+                { x: 13,  y: 5,  r: 16 },
+                { x: 0,   y: 0,  r: 25 }
+            ];
+
+            ctx.fillStyle = '#FCECA6';
+            ctx.beginPath();
+            lumps.forEach(l => {
+                ctx.arc(l.x, l.y, l.r, 0, Math.PI * 2);
+            });
+            ctx.fill();
+
+            ctx.fillStyle = '#FFF9D9';
+            ctx.beginPath();
+            lumps.forEach(l => {
+                ctx.arc(l.x - 3, l.y - 3, l.r * 0.52, 0, Math.PI * 2);
+            });
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawBottleToCanvas(ctx, angleDeg, shakeCount, tiltRad = 0, amp = 0, phase = 0) {
+            ctx.clearRect(0, 0, 320, 420);
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angleDeg * Math.PI / 180);
+
+            // ガラス背景
+            ctx.fillStyle = 'rgba(240, 249, 250, 0.65)';
+            ctx.fill(outerBottlePath);
+
+            // 液体＆バターのクリッピング描画
+            ctx.save();
+            ctx.clip(innerBottlePath);
+
+            ctx.rotate(-angleDeg * Math.PI / 180);
+
+            const rad = angleDeg * Math.PI / 180;
+            const baseSurfaceY = -65 + 15 * Math.cos(rad);
+
+            let milkAlpha = 1.0;
+            let r = 255, g = 255, b = 255;
+            
+            if (shakeCount >= 30) {
+                const progress = Math.min(1.0, (shakeCount - 29) / 11);
+                milkAlpha = 1.0 - progress * 0.65;
+                r = 255 - progress * 10;
+                g = 255 - progress * 10;
+                b = 255 - progress * 40;
+            }
+
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${milkAlpha})`;
+
+            ctx.beginPath();
+            const widthExt = 200;
+            for (let x = -widthExt; x <= widthExt; x += 10) {
+                const y = baseSurfaceY + x * Math.tan(tiltRad) + Math.sin(x * 0.03 + phase) * amp;
+                if (x === -widthExt) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.lineTo(widthExt, 300);
+            ctx.lineTo(-widthExt, 300);
+            ctx.closePath();
+            ctx.fill();
+
+            if (shakeCount >= 30) {
+                const sizeRatio = Math.min(1.0, (shakeCount - 29) / 11);
+                drawButter(ctx, baseSurfaceY + 30, sizeRatio, amp, phase);
+            }
+
+            ctx.restore();
+
+            // 底面ガラス
+            ctx.save();
+            ctx.fillStyle = 'rgba(204, 251, 241, 0.35)';
+            ctx.beginPath();
+            ctx.moveTo(-52, 110);
+            ctx.quadraticCurveTo(-52, 122, -32, 122);
+            ctx.lineTo(32, 122);
+            ctx.quadraticCurveTo(52, 122, 52, 110);
+            ctx.quadraticCurveTo(60, 134, 38, 134);
+            ctx.lineTo(-38, 134);
+            ctx.quadraticCurveTo(-60, 134, -52, 110);
+            ctx.fill();
+            ctx.restore();
+
+            // 外郭とハイライト
+            ctx.strokeStyle = 'rgba(20, 184, 166, 0.3)';
+            ctx.lineWidth = 6;
+            ctx.stroke(outerBottlePath);
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3.5;
+            ctx.stroke(outerBottlePath);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-48, -10);
+            ctx.lineTo(-48, 95);
+            ctx.stroke();
+
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-35, -75);
+            ctx.lineTo(-28, -98);
+            ctx.stroke();
+
+            drawPlainCap(ctx);
+
+            ctx.restore();
+        }
+
+        function render() {
+            const diff = targetAngle - currentAngle;
+            angleVelocity += diff * 0.04;
+            angleVelocity *= 0.85;
+            currentAngle += angleVelocity;
+
+            if (Math.abs(diff) < 0.05 && Math.abs(angleVelocity) < 0.05) {
+                currentAngle = targetAngle;
+                angleVelocity = 0;
+            }
+
+            const targetTilt = -angleVelocity * 0.05;
+            liquidTilt += (targetTilt - liquidTilt) * 0.1;
+            liquidTilt *= 0.9;
+
+            const targetWaveAmp = Math.abs(angleVelocity) * 1.5;
+            waveAmp += (targetWaveAmp - waveAmp) * 0.15;
+            waveAmp *= 0.92;
+            
+            if (waveAmp < 0.05) waveAmp = 0;
+            if (waveAmp > 0) wavePhase += 0.15;
+
+            drawBottleToCanvas(ctxA, currentAngle, count, liquidTilt, waveAmp, wavePhase);
+            drawBottleToCanvas(ctxB, currentAngle, count, liquidTilt, waveAmp, wavePhase);
+
+            if (!clearScreen.classList.contains('hidden')) {
+                drawBottleToCanvas(ctxClear, 0, 40, 0, 0, 0);
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function showMessage(text, type = 'normal', autoReset = true) {
+            if (messageTimer) {
+                clearTimeout(messageTimer);
+                messageTimer = null;
+            }
+
+            messageText.textContent = text;
+            messageBox.classList.remove('animate-pop');
+            void messageBox.offsetWidth;
+            messageBox.classList.add('animate-pop');
+
+            if (type === 'success') {
+                messageBox.className = "w-full flex items-center justify-center px-3 py-1.5 sm:py-2 rounded-2xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 font-black text-xs sm:text-base shadow-lg text-center transition-all duration-300";
+            } else if (type === 'hint') {
+                messageBox.className = "w-full flex items-center justify-center px-3 py-1.5 sm:py-2 rounded-2xl bg-sky-500/20 border-2 border-sky-400 text-sky-200 font-extrabold text-xs sm:text-base shadow-md text-center transition-all duration-300";
+            } else if (type === 'error') {
+                messageBox.className = "w-full flex items-center justify-center px-3 py-1.5 sm:py-2 rounded-2xl bg-rose-500/20 border-2 border-rose-500/60 text-rose-300 font-extrabold text-xs sm:text-base shadow-md text-center transition-all duration-300";
+            } else {
+                messageBox.className = "w-full flex items-center justify-center px-3 py-1.5 sm:py-2 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-slate-200 font-bold text-xs sm:text-base shadow-inner text-center transition-all duration-300";
+            }
+
+            if (autoReset) {
+                messageTimer = setTimeout(() => {
+                    messageText.textContent = DEFAULT_MESSAGE;
+                    messageBox.className = "w-full flex items-center justify-center px-3 py-1.5 sm:py-2 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-slate-200 font-bold text-xs sm:text-base shadow-inner text-center transition-all duration-300";
+                }, 5000);
+            }
+        }
+
+        function setGameCleared() {
+            statusText.textContent = "GAME：クリア";
+            statusDot.className = "inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-400 animate-pulse";
+            gameStatus.className = "px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-emerald-950/90 border-2 border-emerald-400 text-emerald-300 font-black text-xs sm:text-sm shadow-xl backdrop-blur-md transition-all duration-500 flex items-center gap-2 ring-2 ring-emerald-400/30";
+        }
+
+        function resetGameStatus() {
+            statusText.textContent = "GAME：未クリア";
+            statusDot.className = "inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400 animate-pulse";
+            gameStatus.className = "px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-slate-900/90 border-2 border-slate-700/80 text-slate-300 font-black text-xs sm:text-sm shadow-xl backdrop-blur-md transition-all duration-500 flex items-center gap-2";
+        }
+
+        execBtn.addEventListener('click', () => {
+            const val1 = select1.value;
+            const val2 = select2.value;
+
+            const isButter = (count >= 40);
+            const isButterForming = (count >= 30 && count < 40);
+            const isUpsideDown = (Math.round(targetAngle / 180) % 2 !== 0);
+
+            if (val1 === 'A' && val2 === 'B') {
+                if (isButter) {
+                    setGameCleared();
+                    clearScreen.classList.remove('hidden');
+                } else {
+                    count++;
+                    targetAngle += 180;
+
+                    if (count === 40) {
+                        inputA.value = "";
+                        inputB.value = "";
+                        inputA.className = NEUTRAL_INPUT_CLASS;
+                        inputB.className = NEUTRAL_INPUT_CLASS;
+                        panelLockOverlay.classList.remove('unlocked');
+                        showMessage("ミルクがバターになりました！新しい答えを入力してください", "hint");
+                    } else if (count < 40) {
+                        showMessage("ミルクを逆さにしました", "normal");
+                    }
+                }
+            } 
+            else if (val1 === 'B' && val2 === 'A') {
+                if (isButter) {
+                    showMessage("実行できませんでした", "error");
+                } else if (isButterForming) {
+                    showMessage("もっと大きくしよう！", "hint");
+                } else if (isUpsideDown) {
+                    wrongBtoACount++;
+                    let msg = "";
+                    if (wrongBtoACount <= 2) msg = "何か勘違いをしているようです";
+                    else if (wrongBtoACount <= 4) msg = "あれらは逆さまになったミルクです";
+                    else if (wrongBtoACount <= 6) msg = "間違ってもクルミではありません";
+                    else if (wrongBtoACount <= 8) msg = "諦めてください あれはクルミではないです";
+                    else if (wrongBtoACount <= 10) msg = "リスの好物は逆さまの牛乳ではありません";
+                    else msg = "あなたは牛乳を逆さにすることしかできません";
+                    
+                    showMessage(msg, "error");
+                } else {
+                    showMessage("実行できませんでした", "error");
+                }
+            } 
+            else {
+                showMessage("実行できませんでした", "error");
+            }
+        });
+
+        function resetAllGame() {
+            if (messageTimer) {
+                clearTimeout(messageTimer);
+                messageTimer = null;
+            }
+            count = 0;
+            wrongBtoACount = 0;
+            targetAngle = 0;
+            currentAngle = 0;
+            angleVelocity = 0;
+            liquidTilt = 0;
+            waveAmp = 0;
+            wavePhase = 0;
+
+            inputA.value = "";
+            inputB.value = "";
+            inputA.className = NEUTRAL_INPUT_CLASS;
+            inputB.className = NEUTRAL_INPUT_CLASS;
+            panelLockOverlay.classList.remove('unlocked');
+            select1.selectedIndex = 0;
+            select2.selectedIndex = 0;
+            messageText.textContent = DEFAULT_MESSAGE;
+            messageBox.className = "w-full flex items-center justify-center px-3 py-1.5 sm:py-2 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-slate-200 font-bold text-xs sm:text-base shadow-inner text-center transition-all duration-300";
+            resetGameStatus();
+        }
+
+        resetBtn.addEventListener('click', resetAllGame);
+
+        // 描画ループ始動
+        render();
+    </script>
+</body>
+</html>
